@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
 const ApiKey = "7fafd120";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
+// using local storage to store watched movies data
 export default function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+  });
   const [isLoading, setIsLoading] = useState(null);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
@@ -24,6 +28,7 @@ export default function App() {
   }
   function handleDelete(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
+    console.log(watched);
   }
 
   useEffect(() => {
@@ -67,6 +72,9 @@ export default function App() {
       controller.abort();
     };
   }, [query]);
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
 
   return (
     <>
@@ -378,12 +386,28 @@ function WatchedSummary({ watched }) {
   );
 }
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+  useEffect(() => {
+    function callBack(e) {
+      if (document.activeElement === inputEl.current) return;
+      if (e.code === "Enter") {
+        inputEl.current.focus();
+        setQuery("");
+      }
+    }
+    document.addEventListener("keydown", callBack);
+    return ()=>{
+      document.removeEventListener("keydown",callBack)
+    }
+  }, []);
+
   return (
     <input
       className="search"
       type="text"
       placeholder="Search movies..."
       value={query}
+      ref={inputEl}
       onChange={(e) => setQuery(e.target.value)}
     />
   );
